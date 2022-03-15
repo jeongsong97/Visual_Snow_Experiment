@@ -1,4 +1,4 @@
-from psychopy import core, visual, event
+from psychopy import core, visual, event, data
 from psychopy.hardware import keyboard
 import pandas as pd
 import csv
@@ -16,7 +16,7 @@ import imageio
 path = os.getcwd()
 
 win = visual.Window([800,600], fullscr=False, monitor="testMonitor")
-myMouse = event.Mouse(visible=False)
+myMouse = event.Mouse(visible=True)
 finalTable=[['image','Species', 'RespTime','Answer', 'Correct']]
 
 message1= visual.TextStim(win, pos=[0,+0.1],text='Enter the participant number:')
@@ -71,14 +71,10 @@ while thisResp==None:
             messageVS_2.draw()
             win.flip()
 
-def run(key, i):
+def run(key, thisIncrement):
     # this code gets the landscape as img
     question_link = "/home/bvltesting/Documents/Experiments/Visual_Snow_Experiment/Landscapes"
     
-    path = question_link 
-    files=os.listdir(path)
-    question=random.choice(files)
-    correct_path = path + "//" + question
     correct_path = "/home/bvltesting/Documents/Experiments/Visual_Snow_Experiment/Landscapes/Landscape3.jpeg"
     image = imageio.imread(correct_path)/255.0
     img = psychopy.visual.ImageStim(win=win, image=(correct_path),units="pix")
@@ -88,12 +84,6 @@ def run(key, i):
     
     circle_present = random.choice([True, True, True, True])
     
-    #this is for the particle effect
-    circle_link = "/home/bvltesting/Documents/Experiments/Visual_Snow_Experiment/Stimuli/circle.png"
-    pink_link = "/home/bvltesting/Documents/Experiments/Visual_Snow_Experiment/Stimuli/yellow.jpg"
-    # img = Image.open(circle_link)
-    circle = imageio.imread(circle_link)/255.0
-    
     # generates noise from negative noise_level to positive noise_level (-1 to 1, in this case)
     # because the shape of the np noise array is (width, height, 1), it can broadcast onto any number of dimensions, meaning you could use grayscale or RGB and still have the 'white static' look.
 
@@ -102,81 +92,65 @@ def run(key, i):
     left_side = 0 - win.size[0]/4
     x = random.choice([left_side, right_side])
     y = 0
+    if x == right_side:
+        question = 'Right'
+    if x == left_side:
+        question = 'Left'
     
+    right_poly = psychopy.visual.Polygon(win =win, edges= 4, size = (1.5, 3), pos = (0.5,0), ori=45, opacity=0)
+    left_poly = psychopy.visual.Polygon(win =win, edges =4, size = (1.5, 3), pos = (-0.5,0), ori =45, opacity =0)
+
     # Draw the stimulus to the window. We always draw at the back buffer of the window.
     stimClock = core.Clock()
-    # noise_level = random.choice([0.1])
-    # noise_level = random.uniform(0.1, 10000)
-    noise_level = 0.2 #  0.00001
-    circle_noise_level = 0 # 1000
-    noises = [0.2, 0.5, 0.7, 1, 1.2, 1.5, 1.7, 2]
-    stim_opa = [0.1, 0.15, 0.2, 0.6, 0.5, 0.7, 0.8, 1]
+
     if key =="1":
         particle_opacity = 1
     elif key =="2":
         particle_opacity =0
+    con = 0.05 + thisIncrement
     printed = False
+    left_poly.draw()
+    right_poly.draw()
+    press = False
     if circle_present:
-        circle_noise_level = noises[i]
-        opa = stim_opa[i]
+        
         while stimClock.getTime()< 2:
-            # noise = random.uniform(0,  0.0001)
-            # if i == 0:
-                # print(back_image)
             img.draw()
-
-            circle_stim = psychopy.visual.NoiseStim(win=win, noiseImage = circle_link, mask= 'gauss', size = (250, 250), units='pix', opacity = opa, noiseType ='Normal', 
-                                                                                    blendmode='add', color = (1,1, 1), colorSpace  = 'rgb', noiseElementSize=circle_noise_level, ori= 1)
+            circle_stim = psychopy.visual.NoiseStim(win=win, units='pix', size = (256, 256), noiseType ='Uniform', contrast = con,  mask= 'gauss', 
+                                                                                    blendmode='add',  noiseFractalPower=-1, color = (1,1, 1), colorSpace  = 'rgb', noiseElementSize=1, ori= 1)
+                                                                                    
             circle_stim.pos = (x, y) 
             circle_stim.draw()
+            if press == False:
+                if myMouse.isPressedIn(right_poly):
+                    press = True
+                    Resp_Time = stimClock.getTime()
+                    if x == right_side:
+                        Right = 1
+                    if x == left_side:
+                        Right = 0
+                if myMouse.isPressedIn(left_poly):
+                    press = True
+                    Resp_Time = stimClock.getTime()
+                    if x == right_side:
+                        Right = 0
+                    if x == left_side:
+                        Right = 1
+                
             
-            background = psychopy.visual.NoiseStim(win=win, noiseImage = circle_link, units='pix', size = win.size, noiseType ='Uniform', opacity =particle_opacity, 
-                                                                                        blendmode='add',  noiseFractalPower=-1, color = (1,1, 1), colorSpace  = 'rgb', noiseElementSize=1,
-                                                                                    ori= 1) #, filter='None')
-            background.draw()
-            
-            
-            '''
-            if i ==6:
-                if printed == False:
-                    with open('/home/bvlab/Documents/Experiments/Visual_Snow/test1.txt', 'w') as outfile:
-                        for slice_2d in presented:
-                            np.savetxt(outfile, slice_2d)
-                    printed =True
-            '''
-           
             win.flip()
-            
-            # Pause 2 s, so you get a chance to see it!
-            # core.wait(2)
-    
+           
     else:
         stimClock = core.Clock()
         img.draw()
         win.flip()
         core.wait(2)
+    if press == False:
+        Resp_Time =0
+        Right = 0
     
-    key = psychopy.event.getKeys(keyList =['b'], timeStamped = stimClock)
-    
-    if len(key)>0:
-        ans='1'
-        find = key[0]
-        Resp_Time=find[1]
-        if circle_present:
-            Right = "Correct"
-        else:
-            Right = "Incorrect"
-            
-    else:
-        ans = '0'
-        Resp_Time = 0
-        Answer ='0'
-        if not circle_present:
-            Right = "Correct"
-        else:
-            Right = "Incorrect"
-            
-    row=[question, Resp_Time, ans, Right]
+    row=[question, Resp_Time, Right]
+    staircase.addData(Right)
     finalTable.append(row)
     message = visual.TextStim(win, text='+')
     # Draw the stimulus to the window. We always draw at the back buffer of the window.
@@ -186,12 +160,17 @@ def run(key, i):
     core.wait(0.75)
 
 
-
-
-
 filename = 'images_'+answer+'.csv'
-for i in range(8):
+stepSizeArray =[2]
+arrLength = 12
+for i in range(arrLength-1):
+    stepSizeArray.append(2)
+
+staircase = data.StairHandler(startVal =0.5, stepType ='db',  stepSizes=stepSizeArray, nUp=1, nDown =1, minVal =0, maxVal = 1, nTrials=1)
+for i in staircase:
     run(visual_answer, i)
+    
+print(finalTable)
 '''
 with open(filename, 'a+', newline='') as file:
     writer = csv.writer(file)
