@@ -43,7 +43,6 @@ expInfo['psychopyVersion'] = psychopyVersion
 path = os.getcwd()
 
 win = visual.Window([1920,1080], fullscr=True, monitor="testMonitor")
-finalTable=[['Stimuli Presentation', 'Location', 'Answer','RespTime', 'Correct', 'Contrast_level']]
 prefs.general['shutdownKey'] = 'q'
 event.globalKeys.add(key='q', func=core.quit, name='shutdown')
 
@@ -115,9 +114,6 @@ def run(thisIncrement, count):
         Resp_Time =0
         Right = 0
     
-    row=[count, question,  answer, Resp_Time, Right, con]
-    trials.addData(Right)
-    finalTable.append(row)
     message = visual.TextStim(win, text='+')
     # Draw the stimulus to the window. We always draw at the back buffer of the window.
     message.draw()
@@ -126,30 +122,11 @@ def run(thisIncrement, count):
     core.wait(0.75)
 
 
-filename = 'images_'+expInfo['participant']+'.csv'
 stepSizeArray =[2]
 arrLength = 5
-for i in range(arrLength-1):
-    stepSizeArray.append(2)
-
-#3-1 staircase. 3 wrong answers will increase contrast, 1 right answer will decrease contrast
-#The contrast will start at 0.75.
-
-trials = data.StairHandler(startVal= expInfo['startContrast'], extraInfo=expInfo,
-    stepSizes=[0.8,0.8,0.4,0.4,0.2], stepType='log',
-    nReversals=0.0, nTrials=50.0, 
-    nUp=1.0, nDown=3.0,
-    minVal=0.0, maxVal=1.0,
-    originPath=-1, name='trials')
-count = 0
+trials =[0.9, 0.8, 0.7]
+count =0
 for i in trials:
     run(i, count)
     count = count +1
     
-print(finalTable)
-'''
-with open(filename, 'a+', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerows(finalTable)
-
-'''
